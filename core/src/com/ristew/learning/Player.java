@@ -56,7 +56,6 @@ public class Player implements InputProcessor {
             }
             is_right = true;
             inc_speed_x();
-            x += speedX;
         }
         if (keys.get(Keys.LEFT)) {
             if (is_right) {
@@ -64,14 +63,13 @@ public class Player implements InputProcessor {
                 flip_sprites();
             }
             is_right = false;
-            inc_speed_x();
-            x -= speedX;
+            dec_speed_x();
         }
         if (keys.get(Keys.UP)) {
-            y += 0.5f;
+            speedY = 0.5f;
         }
         if (keys.get(Keys.DOWN)) {
-            y -= 0.5f;
+            speedY = -0.5f;
         }
         ticks ++;
         if (!is_moving) {
@@ -81,11 +79,20 @@ public class Player implements InputProcessor {
             cycle_sprites();
             ticks = 0;
         }
+        if (is_moving) {
+            move_player();
+        }
     }
 
     void inc_speed_x() {
-        if (speedX < 2) {
+        if (speedX < 1) {
             speedX += 1 / (2 + 2 * speedX * speedX);
+        }
+    }
+
+    void dec_speed_x() {
+        if (speedX > -1) {
+            speedX -= 1 / (2 + 2 * speedX * speedX);
         }
     }
 
@@ -101,6 +108,15 @@ public class Player implements InputProcessor {
             nextSprite = 0;
         }
         currentSprite = playerSprites.get(nextSprite);
+    }
+
+    void move_player() {
+        if (World.instance().get_tile_type(x + speedX, y) == 0) {
+            x += speedX;
+        }
+        if (World.instance().get_tile_type(x, y + speedY) == 0) {
+            y += speedY;
+        }
     }
 
     HashMap<Integer, Boolean> init_keys(){
@@ -128,6 +144,12 @@ public class Player implements InputProcessor {
 
     void get_is_moving() {
         is_moving = keys.get(Keys.LEFT) || keys.get(Keys.RIGHT) || keys.get(Keys.UP) || keys.get(Keys.DOWN);
+        if (!keys.get(Keys.LEFT) || keys.get(Keys.RIGHT)) {
+            speedX = 0f;
+        }
+        if (!keys.get(Keys.UP) || keys.get(Keys.DOWN)) {
+            speedY = 0f;
+        }
     }
 
     @Override
