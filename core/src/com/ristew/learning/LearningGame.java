@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.Timer;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.StretchViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import javax.swing.*;
@@ -29,17 +30,17 @@ public class LearningGame extends ApplicationAdapter {
 		player = new Player(0.2f, 100f, 100f);
 		player.load("core/assets/fox-idle.png");
 		camera = new OrthographicCamera();
-		viewport = new FitViewport(640, 360, camera);
+		viewport = new StretchViewport(640, 360, camera);
 		viewport.apply();
 	}
 
 	@Override
 	public void render () {
-		camera.position.x = player.x + viewport.getScreenWidth() / 2 - 100;
-		camera.position.y = viewport.getScreenHeight() / 2;
+		camera.position.x = player.x + camera.viewportWidth / 2 - 100;
+		camera.position.y = camera.viewportHeight / 2;
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
-		Gdx.gl.glClearColor(1, 1, 1, 1);
+		Gdx.gl.glClearColor(0.5f, 0.8f, 1f, 1f);
 		Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 		batch.begin();
 		World.instance().draw(batch);

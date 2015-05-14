@@ -20,6 +20,7 @@ public class Player implements InputProcessor {
     int ticks;
     boolean is_moving;
     float x, y, speedX, speedY;
+    // maps Keys.TYPE to true/false for maximum laziness
     private HashMap<Integer, Boolean> keys;
 
     public Player(float delta, float x, float y) {
@@ -31,6 +32,7 @@ public class Player implements InputProcessor {
         is_moving = false;
         speedX = 1f;
         Gdx.input.setInputProcessor(this);
+        // have to set keys used in map initially to false or else bad things happen
         keys = init_keys();
     }
 
@@ -40,7 +42,7 @@ public class Player implements InputProcessor {
     }
 
     public void load(String path) {
-        playerSprites = new ArrayList<Sprite>();
+        playerSprites = new ArrayList<>();
         Texture img = new Texture(path);
         for (int i = 0; i < img.getWidth(); i += 32) {
             playerSprites.add(new Sprite(img, i, 0, 32, 32));
@@ -111,16 +113,16 @@ public class Player implements InputProcessor {
     }
 
     void move_player() {
-        if (World.instance().get_tile_type(x + speedX, y) == 0) {
+        if (World.instance().get_tile_type(x + speedX, y) == World.GRASSTILE) {
             x += speedX;
         }
-        if (World.instance().get_tile_type(x, y + speedY) == 0) {
+        if (World.instance().get_tile_type(x, y + speedY) == World.GRASSTILE) {
             y += speedY;
         }
     }
 
     HashMap<Integer, Boolean> init_keys(){
-        HashMap ret = new HashMap<Integer, Boolean>();
+        HashMap ret = new HashMap<>();
         ret.put(Keys.RIGHT, false);
         ret.put(Keys.LEFT, false);
         ret.put(Keys.UP, false);
