@@ -15,6 +15,7 @@ public class World {
     ArrayList<Sprite> worldSprites;
     // Actually 3-tuples - I should probably make this more OO
     ArrayList<Integer[]> worldTiles;
+    ArrayList<Sprite> detritus;
 
     // I can into patterns
     static World theWorld;
@@ -23,6 +24,7 @@ public class World {
     public World () {
         worldSprites = new ArrayList<>();
         worldTiles = new ArrayList<>();
+        detritus = new ArrayList<>();
         load_sprites();
     }
 
@@ -65,6 +67,13 @@ public class World {
         return ret;
     }
 
+    void add_detritus(Sprite det) {
+        detritus.add(det);
+        if (detritus.size() > 10) {
+            detritus.remove(0);
+        }
+    }
+
     void draw(SpriteBatch batch) {
         for (Integer [] tuple : worldTiles) {
             if (tuple.length != 3) {
@@ -74,6 +83,9 @@ public class World {
                 batch.draw(worldSprites.get(tuple[2]), tuple[0] * 32f, tuple[1] * 32f);
             }
 
+        }
+        for (Sprite s : detritus) {
+            s.draw(batch);
         }
     }
 

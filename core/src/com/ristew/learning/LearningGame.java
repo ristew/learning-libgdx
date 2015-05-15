@@ -36,7 +36,7 @@ public class LearningGame extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-		camera.position.x = player.x + camera.viewportWidth / 2 - 100;
+		camera.position.x = player.x + camera.viewportWidth / 2 - 260;
 		camera.position.y = camera.viewportHeight / 2;
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);

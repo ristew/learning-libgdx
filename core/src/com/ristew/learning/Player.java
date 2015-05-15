@@ -6,6 +6,8 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.Input.Keys;
+
+import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -20,6 +22,9 @@ public class Player implements InputProcessor {
     int ticks;
     boolean is_moving;
     float x, y, speedX, speedY;
+    float mouseX, mouseY;
+
+    Arrow playerArrow;
     // maps Keys.TYPE to true/false for maximum laziness
     private HashMap<Integer, Boolean> keys;
 
@@ -38,7 +43,10 @@ public class Player implements InputProcessor {
 
     public void draw(SpriteBatch batch) {
         update();
-        batch.draw(currentSprite, x, y);
+        currentSprite.draw(batch);
+        if (playerArrow != null) {
+            playerArrow.draw(batch);
+        }
     }
 
     public void load(String path) {
@@ -73,7 +81,19 @@ public class Player implements InputProcessor {
         if (keys.get(Keys.DOWN)) {
             speedY = -0.5f;
         }
-        ticks ++;
+        if (keys.get(Keys.SPACE) && playerArrow == null) {
+            attack();
+        }
+        else if (!keys.get(Keys.SPACE) && playerArrow != null && !playerArrow.is_fired) {
+            playerArrow.fire();
+        }
+        if (keys.get(Keys.NUM_1) && playerArrow != null) {
+            playerArrow.inc_angle();
+        }
+        else if (playerArrow != null) {
+            playerArrow.inc_speed_x();
+        }
+        ticks++;
         if (!is_moving) {
             currentSprite = playerSprites.get(0);
         }
@@ -81,9 +101,15 @@ public class Player implements InputProcessor {
             cycle_sprites();
             ticks = 0;
         }
+        if (playerArrow != null) {
+            if (!playerArrow.update(x + 8, y + 8, is_right)) {
+                playerArrow = null;
+            }
+        }
         if (is_moving) {
             move_player();
         }
+        currentSprite.setPosition(x, y);
     }
 
     void inc_speed_x() {
@@ -119,6 +145,11 @@ public class Player implements InputProcessor {
         if (World.instance().get_tile_type(x, y + speedY) == World.GRASSTILE) {
             y += speedY;
         }
+
+    }
+
+    void attack() {
+        playerArrow = new Arrow(x + 16, y + 8, 2 * (is_right ? 1 : -1), 1);
     }
 
     HashMap<Integer, Boolean> init_keys(){
@@ -127,6 +158,8 @@ public class Player implements InputProcessor {
         ret.put(Keys.LEFT, false);
         ret.put(Keys.UP, false);
         ret.put(Keys.DOWN, false);
+        ret.put(Keys.SPACE, false);
+        ret.put(Keys.NUM_1, false);
         return ret;
     }
 
@@ -161,6 +194,9 @@ public class Player implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
+        /*if (playerArrow != null) {
+            playerArrow.set_angle_mouse(Gdx.input.getX() + x, Gdx.input.getY());
+        }*/
         return false;
     }
 
@@ -176,6 +212,9 @@ public class Player implements InputProcessor {
 
     @Override
     public boolean mouseMoved(int screenX, int screenY) {
+        mouseX = screenX;
+        mouseY = screenY;
+        System.out.println(mouseX + ", " + mouseY);
         return false;
     }
 
