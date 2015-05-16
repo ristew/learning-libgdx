@@ -10,29 +10,33 @@ import java.util.ArrayList;
 /**
  * Created by riley on 5/14/2015.
  */
-public class Arrow {
+public class Arrow extends MovingEntity {
     public static int BOWTILE = 0;
     public static int ARROWTILE = 1;
     public static int HITTILE = 2;
+    ArrayList<Sprite> spriteList;
     ArrayList<Sprite> arrowSprites;
     Sprite currentSprite;
-    float dist, accuracy;
+    public float accuracy;
     float x, y;
     float orig_y;
-    float speedX, speedY;
+    float speedX, speedY, speed;
     float angle;
     boolean is_fired;
-    boolean is_alive;
+    public boolean is_alive;
+    boolean is_right;
     public Arrow(float x, float y, float sX, float sY) {
         arrowSprites = new ArrayList<>();
+        spriteList = arrowSprites;
         this.x = x;
         this.y = this.orig_y = y;
         this.speedX = sX;
         this.speedY = sY;
         calc_angle();
+        speed = Math.abs(speedX) + Math.abs(speedY);
         is_alive = true;
         is_fired = false;
-        accuracy = (float) Math.random() - 0.5f;
+        accuracy = (float) Math.random() * 2 - 1f;
         load();
     }
 
@@ -48,45 +52,65 @@ public class Arrow {
     }
 
     public void inc_speed_x() {
-        if (Math.abs(speedX) < 5) {
-            speedX += 0.1 * (speedX > 0 ? 1 : -1);
-            currentSprite.setScale(Math.abs(speedX) / 4, 1f);
+        if (Math.abs(speed) < 5) {
+            speed += 0.1;
+            currentSprite.setScale(speed / 4, 1f);
 
         }
-        currentSprite.setRotation(5 * speedY * (speedX > 0 ? 1 : -1));
+        set_rotation();
+    }
+
+    public void dec_angle() {
+        angle -= 0.02 * signX();
+        set_rotation();
     }
 
     public void inc_angle() {
-        speedY += 0.01;
-        speedX -= 0.01 * (speedX > 0 ? 1 : -1);
+        angle += 0.02 * signX();
+        set_rotation();
     }
 
     public void fire() {
         currentSprite = arrowSprites.get(ARROWTILE);
+        currentSprite = arrowSprites.get(ARROWTILE);
         is_fired = true;
-        speedX += accuracy;
-        speedY += accuracy / 2;
+        speedX = (float) Math.cos(angle) * speed * (speedX > 0 ? 1 : -1);
+        speedY = (float) Math.sin(angle) * speed * (speedX > 0 ? 1 : -1);
+        System.out.println(angle + ", " + speedX + ", " + speedY);
     }
 
     void calc_angle() {
-        angle = (float) Math.atan(speedY / Math.abs(speedX)) * 180 / (float) Math.PI;
+        angle = (float) Math.atan(((speedY / speedX)));
+
+        set_rotation();
+        //if (!is_right && currentSprite != null) currentSprite.setRotation((float) (180 - 180 / Math.PI * angle));
     }
 
-    public boolean update(float newX, float newY, boolean is_right) {
+    void set_rotation() {
+        if (currentSprite != null) {
+            currentSprite.setRotation((float) (angle * 180 / Math.PI));
+        }
+    }
+
+    public void update_position(float posX, float posY, boolean right) {
+        is_right = right;
+        if (!is_fired) {
+            x = posX;
+            y = orig_y = posY;
+        }
+    }
+
+    public void update() {
         if (is_fired) {
-            dist += Math.sqrt(speedX * speedX + speedY * speedY);
             x += speedX;
             y += speedY;
             speedY -= 0.05;
             calc_angle();
-            currentSprite.setRotation(angle * (speedX > 0 ? 1 : -1));
         }
-        else if (!is_fired) {
-            this.x = newX;
-            this.y = this.orig_y = newY;
-        }
+
         if (!(is_right ^ speedX < 0) && !is_fired) {
-            speedX *= -1;
+            speedX  = -speedX;
+            angle = -angle;
             flip_sprites();
         }
         currentSprite.setX(x);
@@ -102,44 +126,21 @@ public class Arrow {
             }
             speedX = speedY = 0;
         }
-        return is_alive;
+
     }
 
     public void flip_sprites() {
         for (Sprite s : arrowSprites) {
-            s.flip(true, false);
+            s.flip(true, true);
         }
+    }
+
+    float signX() {
+        return (speedX > 0) ? 1 : -1;
     }
 
     public void draw(SpriteBatch sb) {
         currentSprite.draw(sb);
-    }
-
-    /*
-    x2 + y2 = s2
-    s2 = nx2 + ny2
-     */
-    public void set_angle_mouse(float mX, float mY) {
-
-        mX = mX * 640 / Gdx.graphics.getWidth();
-        mY = mY * 360 / Gdx.graphics.getHeight();
-        System.out.println(mX + ", " + mY);
-        float dX = mX - x - 260;
-        float dY = (360 - mY) - y;
-        if (dX == 0) {
-            dX = 1;
-        }
-        float ratio = dY / dX;
-        float speedTotOld = magnitude(speedX, speedY);
-        float speedTotNew = magnitude(dX, dY);
-        System.out.println("old ds: " + dX + ", " + dY);
-        speedX = (float) Math.cos(Math.atan(ratio)) * speedTotOld;
-        speedY = (float) Math.sin(Math.atan(ratio)) * speedTotOld;
-        System.out.println("new ds: " + speedX + ", " + speedY);
-    }
-
-    float magnitude(float x, float y) {
-        return (float) Math.sqrt(x * x + y * y);
     }
 
 }

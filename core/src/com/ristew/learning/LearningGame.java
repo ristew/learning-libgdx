@@ -28,7 +28,6 @@ public class LearningGame extends ApplicationAdapter {
 		font = new BitmapFont();
 		font.setColor(1, 1, 0, 1);
 		player = new Player(0.2f, 100f, 100f);
-		player.load("core/assets/fox-idle.png");
 		camera = new OrthographicCamera();
 		viewport = new StretchViewport(640, 360, camera);
 		viewport.apply();
@@ -36,7 +35,7 @@ public class LearningGame extends ApplicationAdapter {
 
 	@Override
 	public void render () {
-		camera.position.x = player.x + camera.viewportWidth / 2 - 260;
+		camera.position.x = player.x + camera.viewportWidth / 2 - 150;
 		camera.position.y = camera.viewportHeight / 2;
 		camera.update();
 		batch.setProjectionMatrix(camera.combined);
@@ -52,7 +51,6 @@ public class LearningGame extends ApplicationAdapter {
 	public void dispose () {
 		batch.dispose();
 		font.dispose();
-		img.dispose();
 	}
 
 	@Override

@@ -6,25 +6,28 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.Input.Keys;
+import com.badlogic.gdx.utils.Timer;
 
 import java.security.Key;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Vector;
 
 /**
  * Created by ras on 5/12/15.
  */
-public class Player implements InputProcessor {
+public class Player extends MovingEntity implements InputProcessor {
+    ArrayList<Sprite> spriteList;
     ArrayList<Sprite> playerSprites;
     public Sprite currentSprite;
     public float spriteDelta;
     public boolean is_right;
     int ticks;
-    boolean is_moving;
+    boolean is_moving, can_fire;
     float x, y, speedX, speedY;
-    float mouseX, mouseY;
 
     Arrow playerArrow;
+    ArrayList<Arrow> arrows;
     // maps Keys.TYPE to true/false for maximum laziness
     private HashMap<Integer, Boolean> keys;
 
@@ -35,17 +38,21 @@ public class Player implements InputProcessor {
         ticks = 1;
         is_right = true;
         is_moving = false;
+        can_fire = true;
         speedX = 1f;
         Gdx.input.setInputProcessor(this);
         // have to set keys used in map initially to false or else bad things happen
         keys = init_keys();
+        arrows = new ArrayList<>();
+        load("core/assets/fox-idle.png");
+        spriteList = playerSprites;
     }
 
-    public void draw(SpriteBatch batch) {
+    public void draw(SpriteBatch sb) {
         update();
-        currentSprite.draw(batch);
-        if (playerArrow != null) {
-            playerArrow.draw(batch);
+        currentSprite.draw(sb);
+        for (Arrow a : arrows) {
+            a.draw(sb);
         }
     }
 
@@ -58,8 +65,8 @@ public class Player implements InputProcessor {
         currentSprite = playerSprites.get(0);
     }
 
-    void update() {
-        if (keys.get(Keys.RIGHT)) {
+    public void update() {
+        if (get(Keys.RIGHT)) {
             if (!is_right) {
                 speedX = 0;
                 flip_sprites();
@@ -67,7 +74,7 @@ public class Player implements InputProcessor {
             is_right = true;
             inc_speed_x();
         }
-        if (keys.get(Keys.LEFT)) {
+        if (get(Keys.LEFT)) {
             if (is_right) {
                 speedX = 0;
                 flip_sprites();
@@ -75,20 +82,29 @@ public class Player implements InputProcessor {
             is_right = false;
             dec_speed_x();
         }
-        if (keys.get(Keys.UP)) {
+        if (get(Keys.UP)) {
             speedY = 0.5f;
         }
-        if (keys.get(Keys.DOWN)) {
+        if (get(Keys.DOWN)) {
             speedY = -0.5f;
         }
-        if (keys.get(Keys.SPACE) && playerArrow == null) {
+        if (get(Keys.SPACE) && can_fire) {
             attack();
         }
-        else if (!keys.get(Keys.SPACE) && playerArrow != null && !playerArrow.is_fired) {
+        else if (!get(Keys.SPACE) && playerArrow != null && !playerArrow.is_fired) {
+            Timer.schedule(new Timer.Task() {
+                @Override
+                public void run() {
+                    can_fire = true;
+                }
+            }, 0.5f);
             playerArrow.fire();
         }
-        if (keys.get(Keys.NUM_1) && playerArrow != null) {
+        if (get(Keys.NUM_1) && playerArrow != null) {
             playerArrow.inc_angle();
+        }
+        if (get(Keys.NUM_2) && playerArrow != null) {
+            playerArrow.dec_angle();
         }
         else if (playerArrow != null) {
             playerArrow.inc_speed_x();
@@ -102,9 +118,25 @@ public class Player implements InputProcessor {
             ticks = 0;
         }
         if (playerArrow != null) {
-            if (!playerArrow.update(x + 8, y + 8, is_right)) {
+            playerArrow.update_position(x + 8, y + 8, is_right);
+            playerArrow.update();
+            if (!playerArrow.is_alive) {
+                arrows.remove(playerArrow);
                 playerArrow = null;
             }
+        }
+        Vector<Integer> removals = new Vector<>();
+        for (Arrow a : arrows) {
+            if (a != playerArrow) {
+                a.update();
+                if (!a.is_alive) {
+                    removals.add(arrows.indexOf(a));
+                }
+            }
+        }
+        for (Integer i : removals) {
+            Arrow temp = arrows.get(i);
+            arrows.remove(temp);
         }
         if (is_moving) {
             move_player();
@@ -149,7 +181,16 @@ public class Player implements InputProcessor {
     }
 
     void attack() {
-        playerArrow = new Arrow(x + 16, y + 8, 2 * (is_right ? 1 : -1), 1);
+        can_fire = false;
+        playerArrow = new Arrow(x + 16, y + 8, 2 * (is_right ? 1 : -1), 0.5f);
+        arrows.add(playerArrow);
+    }
+
+    boolean get(Integer key) {
+        if (!keys.containsKey(key)) {
+            keys.put(key, false);
+        }
+        return keys.get(key);
     }
 
     HashMap<Integer, Boolean> init_keys(){
@@ -160,6 +201,7 @@ public class Player implements InputProcessor {
         ret.put(Keys.DOWN, false);
         ret.put(Keys.SPACE, false);
         ret.put(Keys.NUM_1, false);
+        ret.put(Keys.NUM_2, false);
         return ret;
     }
 
@@ -178,11 +220,11 @@ public class Player implements InputProcessor {
     }
 
     void get_is_moving() {
-        is_moving = keys.get(Keys.LEFT) || keys.get(Keys.RIGHT) || keys.get(Keys.UP) || keys.get(Keys.DOWN);
-        if (!keys.get(Keys.LEFT) || keys.get(Keys.RIGHT)) {
+        is_moving = get(Keys.LEFT) || get(Keys.RIGHT) || get(Keys.UP) || get(Keys.DOWN);
+        if (!get(Keys.LEFT) || get(Keys.RIGHT)) {
             speedX = 0f;
         }
-        if (!keys.get(Keys.UP) || keys.get(Keys.DOWN)) {
+        if (!get(Keys.UP) || get(Keys.DOWN)) {
             speedY = 0f;
         }
     }
@@ -194,9 +236,6 @@ public class Player implements InputProcessor {
 
     @Override
     public boolean touchDown(int screenX, int screenY, int pointer, int button) {
-        /*if (playerArrow != null) {
-            playerArrow.set_angle_mouse(Gdx.input.getX() + x, Gdx.input.getY());
-        }*/
         return false;
     }
 
@@ -212,9 +251,6 @@ public class Player implements InputProcessor {
 
     @Override
     public boolean mouseMoved(int screenX, int screenY) {
-        mouseX = screenX;
-        mouseY = screenY;
-        System.out.println(mouseX + ", " + mouseY);
         return false;
     }
 
